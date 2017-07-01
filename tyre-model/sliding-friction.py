@@ -9,22 +9,27 @@ def slidingCoefficient(longSlipValue, latSlipValue, asymptoteValue, asymptoteSli
 
     if (combinedSlip == 0):
         return 0;
-    
-    limitx = asymptoteSlipLong * (longSlipValue / combinedSlip)
-    limity = asymptoteLatSlip * (latSlipValue / combinedSlip)
 
-    limitTotal = np.sqrt(limitx**2+limity**2)
+    if (longSlipValue > 0):
+        k = latSlipValue / longSlipValue
+        limitx = (asymptoteSlipLong * asymptoteLatSlip) / np.sqrt(asymptoteLatSlip**2 + asymptoteSlipLong ** 2 * k ** 2) 
 
-    if (combinedSlip < limitTotal):
-        return (combinedSlip / limitTotal) * asymptoteValue
-    
-    return asymptoteValue
+        limity = k * limitx
+        limitTotal = np.sqrt(limitx**2+limity**2)
+
+        if (combinedSlip < limitTotal):
+            return (combinedSlip / limitTotal) * asymptoteValue       
+        return asymptoteValue
+    else:
+        if (latSlipValue < asymptoteLatSlip):
+            return (latSlipValue / asymptoteLatSlip) * asymptoteValue       
+        return asymptoteValue
 
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 
 X = np.arange(0.0, 0.9, 0.01)
-Y = np.arange(0.0, 0.9, 0.01)
+Y = np.arange(0.0, 90, 1)
 
 xs = np.zeros(len(X)*len(Y))
 ys = np.zeros(len(X)*len(Y))
@@ -35,7 +40,7 @@ for x in range(len(X)):
     for y in range(len(Y)):
         xs[x*len(Y)+y] = X[x]
         ys[x*len(Y)+y] = Y[y]
-        value = slidingCoefficient(X[x], Y[y], 0.75, 0.2, 0.8)
+        value = slidingCoefficient(X[x], Y[y], 0.75, 0.2, 20)
         zs[x*len(Y)+y] = value
         c[x*len(Y)+y] = 'b' if value < 0.75 else 'r'
 
