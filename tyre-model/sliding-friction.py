@@ -40,7 +40,7 @@ for x in range(len(X)):
     for y in range(len(Y)):
         xs[x*len(Y)+y] = X[x]
         ys[x*len(Y)+y] = Y[y]
-        value = slidingCoefficient(X[x], Y[y], 0.75, 0.2, 20)
+        value = slidingCoefficient(X[x], Y[y], 0.75, 0.4, 40)
         zs[x*len(Y)+y] = value
         c[x*len(Y)+y] = 'b' if value < 0.75 else 'r'
 
