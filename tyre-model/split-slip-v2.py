@@ -65,8 +65,8 @@ def adhesion(longSlipValue, latSlipValue, extremumValue, asymptoteValue, extremu
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 
-X = np.arange(0.0, 0.9, 0.01)
-Y = np.arange(0.0, 90, 1)
+X = np.arange(0.0, 0.6, 0.01)
+Y = np.arange(0.0, 60, 1)
 
 xs = np.zeros(len(X)*len(Y))
 ys = np.zeros(len(X)*len(Y))
