@@ -1,1 +1,2 @@
-# Tyre slip visualizations made with Python
+# Tyre slip visualizations
+Written in Python
