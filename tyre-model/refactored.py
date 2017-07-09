@@ -32,23 +32,16 @@ def coefficient(long_slip_value, lat_slip_value, longitudinal_curve, lateral_cur
                          math.pi / 2)) * angle_extremum
 
     if long_slip_value > 0:
-        k = lat_slip_value / long_slip_value
+        gradient = lat_slip_value / long_slip_value
 
-        limit_extremum_x = (longitudinal_curve.extremum_slip * lateral_curve.extremum_slip) / np.sqrt(
-            lateral_curve.extremum_slip ** 2 + longitudinal_curve.extremum_slip ** 2 * k ** 2)
-        limit_extremum_y = k * limit_extremum_x
-        limit_extremum_total = np.sqrt(limit_extremum_x ** 2 + limit_extremum_y ** 2)
+        limit_extremum = calculate_limit(gradient, longitudinal_curve.extremum_slip, lateral_curve.extremum_slip)
+        limit_asymptote = calculate_limit(gradient, longitudinal_curve.asymptote_slip, lateral_curve.asymptote_slip)
 
-        limit_asymptote_x = (longitudinal_curve.asymptote_slip * lateral_curve.asymptote_slip) / np.sqrt(
-            lateral_curve.asymptote_slip ** 2 + longitudinal_curve.asymptote_slip ** 2 * k ** 2)
-        limit_asymptote_y = k * limit_asymptote_x
-        limit_asymptote_total = np.sqrt(limit_asymptote_x ** 2 + limit_asymptote_y ** 2)
-
-        if combined_slip <= limit_extremum_total:
-            return (combined_slip / limit_extremum_total) * extremum_value
-        elif limit_extremum_total < combined_slip < limit_asymptote_total:
-            return ((asymptote_value - extremum_value) / (limit_asymptote_total - limit_extremum_total)) \
-                   * (combined_slip - limit_extremum_total) + extremum_value
+        if combined_slip <= limit_extremum:
+            return (combined_slip / limit_extremum) * extremum_value
+        elif limit_extremum < combined_slip < limit_asymptote:
+            return ((asymptote_value - extremum_value) / (limit_asymptote - limit_extremum)) \
+                   * (combined_slip - limit_extremum) + extremum_value
         return asymptote_value
 
     if lat_slip_value <= lateral_curve.extremum_slip:
@@ -58,6 +51,11 @@ def coefficient(long_slip_value, lat_slip_value, longitudinal_curve, lateral_cur
                * (lat_slip_value - lateral_curve.extremum_slip) + extremum_value
     return asymptote_value
 
+
+def calculate_limit(gradient, longitudinal_slip, lateral_slip):
+    limit_x = (longitudinal_slip * lateral_slip) / np.sqrt(lateral_slip ** 2 + longitudinal_slip ** 2 * gradient ** 2)
+    limit_y = gradient * limit_x
+    return np.sqrt(limit_x ** 2 + limit_y ** 2)
 
 fig = plt.figure()
 ax = fig.gca(projection='3d')
