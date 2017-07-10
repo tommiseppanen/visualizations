@@ -11,38 +11,41 @@ class FrictionCurve:
         self.asymptote_value = asymptote_value
         self.asymptote_slip = asymptote_slip
 
+    def calculate_coefficient(self, value):
+        absolute_value = abs(value)
+        if absolute_value <= self.extremum_slip:
+            return (absolute_value / self.extremum_slip) * self.extremum_value
+        elif self.extremum_slip < absolute_value < self.asymptote_slip:
+            return ((self.asymptote_value - self.extremum_value) / (self.asymptote_slip - self.extremum_slip)) \
+               * (absolute_value - self.extremum_slip) + self.extremum_value
+        return self.asymptote_value
+
 
 def coefficient(long_slip_value, lat_slip_value, longitudinal_curve, lateral_curve):
     combined_slip = np.sqrt(lat_slip_value ** 2 + long_slip_value ** 2)
 
-    absolute_long_slip_value = abs(long_slip_value)
-    absolute_lat_slip_value = abs(lat_slip_value)
-
     if combined_slip == 0:
         return 0
 
-    asymptote_value, extremum_value = \
+    if long_slip_value != 0:
+        combined_slip_curve = create_combined_curve(long_slip_value, lat_slip_value, longitudinal_curve, lateral_curve)
+        return combined_slip_curve.calculate_coefficient(combined_slip)
+
+    return lateral_curve.calculate_coefficient(lat_slip_value)
+
+
+def create_combined_curve(long_slip_value, lat_slip_value, longitudinal_curve, lateral_curve):
+    absolute_long_slip_value = abs(long_slip_value)
+    absolute_lat_slip_value = abs(lat_slip_value)
+
+    gradient = absolute_lat_slip_value / absolute_long_slip_value
+
+    extremum_value, asymptote_value = \
         interpolate_combined_values(absolute_long_slip_value, absolute_lat_slip_value, longitudinal_curve, lateral_curve)
+    limit_extremum = calculate_limit(gradient, longitudinal_curve.extremum_slip, lateral_curve.extremum_slip)
+    limit_asymptote = calculate_limit(gradient, longitudinal_curve.asymptote_slip, lateral_curve.asymptote_slip)
 
-    if absolute_long_slip_value > 0:
-        gradient = absolute_lat_slip_value / absolute_long_slip_value
-
-        limit_extremum = calculate_limit(gradient, longitudinal_curve.extremum_slip, lateral_curve.extremum_slip)
-        limit_asymptote = calculate_limit(gradient, longitudinal_curve.asymptote_slip, lateral_curve.asymptote_slip)
-
-        if combined_slip <= limit_extremum:
-            return (combined_slip / limit_extremum) * extremum_value
-        elif limit_extremum < combined_slip < limit_asymptote:
-            return ((asymptote_value - extremum_value) / (limit_asymptote - limit_extremum)) \
-                   * (combined_slip - limit_extremum) + extremum_value
-        return asymptote_value
-
-    if absolute_lat_slip_value <= lateral_curve.extremum_slip:
-        return (absolute_lat_slip_value / lateral_curve.extremum_slip) * extremum_value
-    elif lateral_curve.extremum_slip < absolute_lat_slip_value < lateral_curve.asymptote_slip:
-        return ((asymptote_value - extremum_value) / (lateral_curve.asymptote_slip - lateral_curve.extremum_slip)) \
-               * (absolute_lat_slip_value - lateral_curve.extremum_slip) + extremum_value
-    return asymptote_value
+    return FrictionCurve(extremum_value, asymptote_value, limit_extremum, limit_asymptote)
 
 
 def interpolate_combined_values(long_slip_value, lat_slip_value, longitudinal_curve, lateral_curve):
@@ -56,13 +59,14 @@ def interpolate_combined_values(long_slip_value, lat_slip_value, longitudinal_cu
     extremum_value = longitudinal_curve.extremum_value + \
                      ((lateral_curve.extremum_value - longitudinal_curve.extremum_value) / (
                          math.pi / 2)) * angle_extremum
-    return asymptote_value,extremum_value
+    return extremum_value, asymptote_value
 
 
 def calculate_limit(gradient, longitudinal_slip, lateral_slip):
     limit_x = (longitudinal_slip * lateral_slip) / np.sqrt(lateral_slip ** 2 + longitudinal_slip ** 2 * gradient ** 2)
     limit_y = gradient * limit_x
     return np.sqrt(limit_x ** 2 + limit_y ** 2)
+
 
 fig = plt.figure()
 ax = fig.gca(projection='3d')
