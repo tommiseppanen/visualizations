@@ -1,7 +1,5 @@
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
-from matplotlib import cm
-from matplotlib.ticker import LinearLocator, FormatStrFormatter
 import numpy as np
 import math
 
@@ -17,22 +15,17 @@ class FrictionCurve:
 def coefficient(long_slip_value, lat_slip_value, longitudinal_curve, lateral_curve):
     combined_slip = np.sqrt(lat_slip_value ** 2 + long_slip_value ** 2)
 
+    absolute_long_slip_value = abs(long_slip_value)
+    absolute_lat_slip_value = abs(lat_slip_value)
+
     if combined_slip == 0:
         return 0
 
-    angle_extremum = math.atan2(lat_slip_value,
-                                (lateral_curve.extremum_slip / longitudinal_curve.extremum_slip) * long_slip_value)
-    angle_asymptote = math.atan2(lat_slip_value,
-                                 (lateral_curve.asymptote_slip / longitudinal_curve.asymptote_slip) * long_slip_value)
-    asymptote_value = longitudinal_curve.asymptote_value + \
-                      ((lateral_curve.asymptote_value - longitudinal_curve.asymptote_value) / (
-                          math.pi / 2)) * angle_asymptote
-    extremum_value = longitudinal_curve.extremum_value + \
-                     ((lateral_curve.extremum_value - longitudinal_curve.extremum_value) / (
-                         math.pi / 2)) * angle_extremum
+    asymptote_value, extremum_value = \
+        interpolate_combined_values(absolute_long_slip_value, absolute_lat_slip_value, longitudinal_curve, lateral_curve)
 
-    if long_slip_value > 0:
-        gradient = lat_slip_value / long_slip_value
+    if absolute_long_slip_value > 0:
+        gradient = absolute_lat_slip_value / absolute_long_slip_value
 
         limit_extremum = calculate_limit(gradient, longitudinal_curve.extremum_slip, lateral_curve.extremum_slip)
         limit_asymptote = calculate_limit(gradient, longitudinal_curve.asymptote_slip, lateral_curve.asymptote_slip)
@@ -44,12 +37,26 @@ def coefficient(long_slip_value, lat_slip_value, longitudinal_curve, lateral_cur
                    * (combined_slip - limit_extremum) + extremum_value
         return asymptote_value
 
-    if lat_slip_value <= lateral_curve.extremum_slip:
-        return (lat_slip_value / lateral_curve.extremum_slip) * extremum_value
-    elif lateral_curve.extremum_slip < lat_slip_value < lateral_curve.asymptote_slip:
+    if absolute_lat_slip_value <= lateral_curve.extremum_slip:
+        return (absolute_lat_slip_value / lateral_curve.extremum_slip) * extremum_value
+    elif lateral_curve.extremum_slip < absolute_lat_slip_value < lateral_curve.asymptote_slip:
         return ((asymptote_value - extremum_value) / (lateral_curve.asymptote_slip - lateral_curve.extremum_slip)) \
-               * (lat_slip_value - lateral_curve.extremum_slip) + extremum_value
+               * (absolute_lat_slip_value - lateral_curve.extremum_slip) + extremum_value
     return asymptote_value
+
+
+def interpolate_combined_values(long_slip_value, lat_slip_value, longitudinal_curve, lateral_curve):
+    angle_extremum = math.atan2(lat_slip_value,
+                                (lateral_curve.extremum_slip / longitudinal_curve.extremum_slip) * long_slip_value)
+    angle_asymptote = math.atan2(lat_slip_value,
+                                 (lateral_curve.asymptote_slip / longitudinal_curve.asymptote_slip) * long_slip_value)
+    asymptote_value = longitudinal_curve.asymptote_value + \
+                      ((lateral_curve.asymptote_value - longitudinal_curve.asymptote_value) / (
+                          math.pi / 2)) * angle_asymptote
+    extremum_value = longitudinal_curve.extremum_value + \
+                     ((lateral_curve.extremum_value - longitudinal_curve.extremum_value) / (
+                         math.pi / 2)) * angle_extremum
+    return asymptote_value,extremum_value
 
 
 def calculate_limit(gradient, longitudinal_slip, lateral_slip):
@@ -60,8 +67,8 @@ def calculate_limit(gradient, longitudinal_slip, lateral_slip):
 fig = plt.figure()
 ax = fig.gca(projection='3d')
 
-X = np.arange(0.0, 0.9, 0.01)
-Y = np.arange(0.0, 90, 1)
+X = np.arange(-0.9, 0.9, 0.01)
+Y = np.arange(-90, 90, 1)
 
 xs = np.zeros(len(X) * len(Y))
 ys = np.zeros(len(X) * len(Y))
@@ -72,7 +79,7 @@ for x in range(len(X)):
     for y in range(len(Y)):
         xs[x * len(Y) + y] = X[x]
         ys[x * len(Y) + y] = Y[y]
-        value = coefficient(X[x], Y[y], FrictionCurve(2 * 1.0, 2 * 0.75, 0.4, 0.8), FrictionCurve(1.0, 0.75, 20, 40))
+        value = coefficient(X[x], Y[y], FrictionCurve(1 * 1.0, 1 * 0.75, 0.4, 0.8), FrictionCurve(1.0, 0.75, 20, 40))
         zs[x * len(Y) + y] = value
         c[x * len(Y) + y] = 'b' if value <= 0.75 else 'r'
 
