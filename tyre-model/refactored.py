@@ -4,21 +4,25 @@ import numpy as np
 import math
 
 
+class FrictionCurvePoint:
+    def __init__(self, value, slip):
+        self.value = value
+        self.slip = slip
+
+
 class FrictionCurve:
     def __init__(self, extremum_value, asymptote_value, extremum_slip, asymptote_slip):
-        self.extremum_value = extremum_value
-        self.extremum_slip = extremum_slip
-        self.asymptote_value = asymptote_value
-        self.asymptote_slip = asymptote_slip
+        self.extremum = FrictionCurvePoint(extremum_value, extremum_slip)
+        self.asymptote = FrictionCurvePoint(asymptote_value, asymptote_slip)
 
     def calculate_coefficient(self, value):
         absolute_value = abs(value)
-        if absolute_value <= self.extremum_slip:
-            return (absolute_value / self.extremum_slip) * self.extremum_value
-        elif self.extremum_slip < absolute_value < self.asymptote_slip:
-            return ((self.asymptote_value - self.extremum_value) / (self.asymptote_slip - self.extremum_slip)) \
-               * (absolute_value - self.extremum_slip) + self.extremum_value
-        return self.asymptote_value
+        if absolute_value <= self.extremum.slip:
+            return (absolute_value / self.extremum.slip) * self.extremum.value
+        elif self.extremum.slip < absolute_value < self.asymptote.slip:
+            return ((self.asymptote.value - self.extremum.value) / (self.asymptote.slip - self.extremum.slip)) \
+                   * (absolute_value - self.extremum.slip) + self.extremum.value
+        return self.asymptote.value
 
 
 def coefficient(long_slip_value, lat_slip_value, longitudinal_curve, lateral_curve):
@@ -41,25 +45,25 @@ def create_combined_curve(long_slip_value, lat_slip_value, longitudinal_curve, l
     gradient = absolute_lat_slip_value / absolute_long_slip_value
 
     extremum_value, asymptote_value = \
-        interpolate_combined_values(absolute_long_slip_value, absolute_lat_slip_value, longitudinal_curve, lateral_curve)
-    limit_extremum = calculate_limit(gradient, longitudinal_curve.extremum_slip, lateral_curve.extremum_slip)
-    limit_asymptote = calculate_limit(gradient, longitudinal_curve.asymptote_slip, lateral_curve.asymptote_slip)
+        interpolate_combined_values(absolute_long_slip_value, absolute_lat_slip_value, longitudinal_curve,
+                                    lateral_curve)
+    limit_extremum = calculate_limit(gradient, longitudinal_curve.extremum.slip, lateral_curve.extremum.slip)
+    limit_asymptote = calculate_limit(gradient, longitudinal_curve.asymptote.slip, lateral_curve.asymptote.slip)
 
     return FrictionCurve(extremum_value, asymptote_value, limit_extremum, limit_asymptote)
 
 
 def interpolate_combined_values(long_slip_value, lat_slip_value, longitudinal_curve, lateral_curve):
-    angle_extremum = math.atan2(lat_slip_value,
-                                (lateral_curve.extremum_slip / longitudinal_curve.extremum_slip) * long_slip_value)
-    angle_asymptote = math.atan2(lat_slip_value,
-                                 (lateral_curve.asymptote_slip / longitudinal_curve.asymptote_slip) * long_slip_value)
-    asymptote_value = longitudinal_curve.asymptote_value + \
-                      ((lateral_curve.asymptote_value - longitudinal_curve.asymptote_value) / (
-                          math.pi / 2)) * angle_asymptote
-    extremum_value = longitudinal_curve.extremum_value + \
-                     ((lateral_curve.extremum_value - longitudinal_curve.extremum_value) / (
-                         math.pi / 2)) * angle_extremum
-    return extremum_value, asymptote_value
+    return interpolate_by_angle(long_slip_value, lat_slip_value, longitudinal_curve.extremum, lateral_curve.extremum), \
+           interpolate_by_angle(long_slip_value, lat_slip_value, longitudinal_curve.asymptote, lateral_curve.asymptote)
+
+
+def interpolate_by_angle(long_slip_value, lat_slip_value, longitudinal_curve_point, lateral_curve_point):
+    angle = math.atan2(lat_slip_value,
+                       (lateral_curve_point.slip / longitudinal_curve_point.slip) * long_slip_value)
+    return longitudinal_curve_point.value + \
+        ((lateral_curve_point.value - longitudinal_curve_point.value) / (
+               math.pi / 2)) * angle
 
 
 def calculate_limit(gradient, longitudinal_slip, lateral_slip):
